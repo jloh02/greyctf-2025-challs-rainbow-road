@@ -1,10 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { socket } from './socket'
 
 function App() {
   const [count, setCount] = useState(0)
+
+  useEffect(() => {
+    socket.on('connect', () => {
+      console.log('Connected to server with ID:', socket.id)
+    })
+    socket.on('message', (msg) => {
+      console.log('Message received from server:', msg)
+    })
+
+    return () => {
+      socket.off('connect')
+      socket.off('message')
+    }
+  });
 
   return (
     <>
