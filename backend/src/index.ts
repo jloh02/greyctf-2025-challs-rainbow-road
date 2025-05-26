@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-import { getSmallMazeData, initializeMaze, WALLS } from "./maze";
+import { canMoveBetween, FLAG_IMAGE, getSmallMazeData, initializeMaze, WALLS } from "./maze";
 
 const userPositions: Map<string, { x: number; y: number }> = new Map();
 
@@ -19,6 +19,8 @@ function initializeSocketServer() {
     socket.on("moveDirection", (data) => {
       const { direction } = data;
       const position = userPositions.get(socket.id);
+
+      console.log(`User ${socket.id} moved ${direction} from position`, position);
 
       if (position) {
         let newX = position.x;
@@ -41,9 +43,9 @@ function initializeSocketServer() {
 
         // Check bounds and walls
         if (
-          newX >= 0 && newX < WALLS[0].length &&
-          newY >= 0 && newY < WALLS.length &&
-          !WALLS[newY][newX]
+          newX >= 0 && newX < FLAG_IMAGE.length &&
+          newY >= 0 && newY < FLAG_IMAGE.length &&
+          canMoveBetween(position.x, position.y, newX, newY)
         ) {
           userPositions.set(socket.id, { x: newX, y: newY });
           socket.emit("mazeUpdate", getSmallMazeData(newX, newY));

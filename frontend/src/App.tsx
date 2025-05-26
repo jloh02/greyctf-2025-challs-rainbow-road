@@ -17,9 +17,20 @@ function App() {
       console.log('Connected to server with ID:', socket.id);
     });
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+        event.preventDefault(); // Prevent default scrolling behavior
+        console.log(`Key pressed: ${event.key}`);
+        socket.emit('moveDirection', { direction: event.key.substring(5).toLowerCase() });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       socket.off('connect');
       socket.off('mazeUpdate');
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -54,7 +65,7 @@ function App() {
                     style={{
                       width: '100%',
                       height: '100%',
-                      backgroundColor: color || 'none',
+                      backgroundColor: color || 'transparent',
                       boxSizing: 'border-box',
                       borderTop: wallTop ? borderStyle : 'none',
                       borderBottom: wallBottom ? borderStyle : 'none',

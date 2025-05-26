@@ -166,10 +166,9 @@ function createMazeImage(callback: () => void) {
 function canMoveTo(x: number, y: number): boolean {
   return (
     y >= 0 &&
-    y < WALLS.length &&
+    y < FLAG_IMAGE.length &&
     x >= 0 &&
-    x < WALLS[0].length &&
-    !WALLS[y][x]
+    x < FLAG_IMAGE[0].length
   );
 }
 
@@ -179,13 +178,37 @@ export function canMoveBetween(x1: number, y1: number, x2: number, y2: number): 
   const dx = Math.abs(x1 - x2);
   const dy = Math.abs(y1 - y2);
 
-  // Allow moves only between adjacent path pixels (should be 1 in either x or y)
+  // Must be adjacent cells
   if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
-    return true;
+    const wallX = (x1 + x2 + 1);
+    const wallY = (y1 + y2 + 1);
+
+    // // Check if wall in between is passable (false means path)
+    // console.log(`Checking wall at (${wallX}, ${wallY}): ${WALLS[wallY][wallX]}`);
+
+    // // print small section of WALLS for debugging as 1 (wall) and 0 (path)
+    // for (let i = -5; i <= 5; i++) {
+    //   let rowStr = "";
+    //   for (let j = -5; j <= 5; j++) {
+    //     const debugY = wallY + i;
+    //     const debugX = wallX + j;
+    //     if (debugY >= 0 && debugY < WALLS.length && debugX >= 0 && debugX < WALLS[0].length) {
+    //       rowStr += WALLS[debugY][debugX] ? "1" : "0";
+    //     } else {
+    //       rowStr += " ";
+    //     }
+    //   }
+    //   console.log(rowStr);
+    // }
+
+    if (!WALLS[wallY][wallX]) {
+      return true;
+    }
   }
 
   return false;
 }
+
 
 
 export function getSmallMazeData(
