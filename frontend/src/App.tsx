@@ -25,48 +25,51 @@ function App() {
 
   return (
     <>
-      <div
-        style={{
-          display: 'grid',
+      <div id="main-container">
+        <div className="side-panel">
+          <p> Some instructions here keep it short but nice follow the blue path. Use arrow keys to navigate</p>
+        </div>
+        <div
+          className="maze-container"
+        ><div style={{
           gridTemplateColumns: `repeat(${colors[0]?.length || 1}, 1fr)`,
           gridTemplateRows: `repeat(${colors.length || 1}, 1fr)`,
-          border: '5px solid black',
-        }}
-      >
-        {colors.map((row, rowIndex) =>
-          row.map((color, colIndex) => {
-            const y = rowIndex * 2;
-            const x = colIndex * 2;
+        }}>
+            {colors.map((row, rowIndex) =>
+              row.map((color, colIndex) => {
+                const y = rowIndex * 2;
+                const x = colIndex * 2;
 
-            const wallTop = (y > 0) ? walls[y - 1][x] : false;
-            const wallBottom = (y + 1 < walls.length) ? (walls[y + 1][x]) : false;
-            const wallLeft = (x > 0) ? (walls[y][x - 1]) : false;
-            const wallRight = (x + 1 < walls[0].length) ? (walls[y][x + 1]) : false;
+                const wallTop = (y > 0) ? walls[y - 1][x] : false;
+                const wallBottom = (y + 1 < walls.length) ? (walls[y + 1][x]) : false;
+                const wallLeft = (x > 0) ? (walls[y][x - 1]) : false;
+                const wallRight = (x + 1 < walls[0].length) ? (walls[y][x + 1]) : false;
 
-            const borderStyle = '2px solid black'
-            return (
-              <div
-                key={`${rowIndex}-${colIndex}`}
-                style={{
-                  width: '30px',
-                  height: '30px',
-                  backgroundColor: color || 'none',
-                  boxSizing: 'border-box',
-                  borderTop: wallTop ? borderStyle : 'none',
-                  borderBottom: wallBottom ? borderStyle : 'none',
-                  borderLeft: wallLeft ? borderStyle : 'none',
-                  borderRight: wallRight ? borderStyle : 'none',
-                }}
-              />
-            );
-          })
-        )}
+                const borderStyle = '2px solid black'
+                return (
+                  <div
+                    key={`${rowIndex}-${colIndex}`}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      backgroundColor: color || 'none',
+                      boxSizing: 'border-box',
+                      borderTop: wallTop ? borderStyle : 'none',
+                      borderBottom: wallBottom ? borderStyle : 'none',
+                      borderLeft: wallLeft ? borderStyle : 'none',
+                      borderRight: wallRight ? borderStyle : 'none',
+                    }}
+                  />
+                );
+              })
+            )}</div>
+        </div>
+        <div className="side-panel">
+          <p>Press arrow</p>
+          <p>Timer here too</p>
+        </div>
       </div>
 
-
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </>
   );
 }
