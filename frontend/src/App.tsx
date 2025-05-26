@@ -28,6 +28,8 @@ function App() {
       <div id="main-container">
         <div className="side-panel">
           <p> Some instructions here keep it short but nice follow the blue path. Use arrow keys to navigate</p>
+          <p> Maybe it forms a word?</p>
+          <p> Maze size: </p>
         </div>
         <div
           className="maze-container"
@@ -67,6 +69,7 @@ function App() {
         <div className="side-panel">
           <p>Press arrow</p>
           <p>Timer here too</p>
+          <p>Move accepted ? Tick, Cross</p>
         </div>
       </div>
 

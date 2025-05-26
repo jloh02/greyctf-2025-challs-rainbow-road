@@ -204,9 +204,9 @@ export function getSmallMazeData(
   // Prepare colors (cell grid)
   for (let y = 0; y < colorSize; y++) {
     const colorRow: string[] = [];
-    const mazeY = centerY - smallMazeRadius + y;
+    const mazeY = centerY - (smallMazeRadius - 1) + y;
     for (let x = 0; x < colorSize; x++) {
-      const mazeX = centerX - smallMazeRadius + x;
+      const mazeX = centerX - (smallMazeRadius - 1) + x;
       if (
         mazeY >= 0 &&
         mazeY < FLAG_IMAGE.length &&
@@ -224,9 +224,9 @@ export function getSmallMazeData(
   // Prepare walls (wall grid)
   for (let y = 0; y < wallSize; y++) {
     const wallRow: boolean[] = [];
-    const mazeY = centerY * 2 - (wallSize >> 1) + y;
+    const mazeY = centerY * 2 - ((wallSize) >> 1) + 2 + y;
     for (let x = 0; x < wallSize; x++) {
-      const mazeX = centerX * 2 - (wallSize >> 1) + x;
+      const mazeX = centerX * 2 - ((wallSize) >> 1) + 2 + x;
       if (
         mazeY >= 0 &&
         mazeY < WALLS.length &&
