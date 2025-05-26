@@ -30,49 +30,61 @@ export function initializeMaze(callback: () => void) {
       }
 
       generateMazeWalls();
-      createMazeImage();
-      callback()
+      createMazeImage(callback);
     });
 }
 
-
+// TODO: prune even more walls so that maze is more open
 // Use reverse backtracking algorithm to generate a maze using size of FLAG_IMAGE
 export function generateMazeWalls() {
-  const width = FLAG_IMAGE[0].length;
-  const height = FLAG_IMAGE.length;
+  const cellWidth = FLAG_IMAGE[0].length;
+  const cellHeight = FLAG_IMAGE.length;
 
-  const visited = Array.from({ length: height }, () => Array(width).fill(false));
-  const carved = Array.from({ length: height }, () => Array(width).fill(false));
+  // New WALLS size with walls between cells
+  const width = cellWidth * 2 + 1;
+  const height = cellHeight * 2 + 1;
+
+  // Initialize all as walls (true)
+  WALLS = Array.from({ length: height }, () => Array(width).fill(true));
+
+  // visited for cell coordinates
+  const visited = Array.from({ length: cellHeight }, () => Array(cellWidth).fill(false));
   const directions = [
-    { dx: 1, dy: 0 }, // Right
-    { dx: -1, dy: 0 }, // Left
-    { dx: 0, dy: 1 }, // Down
-    { dx: 0, dy: -1 }, // Up
+    { dx: 1, dy: 0 },
+    { dx: -1, dy: 0 },
+    { dx: 0, dy: 1 },
+    { dx: 0, dy: -1 },
   ];
-  const isInBounds = (x: number, y: number) => x >= 0 && x < width && y >= 0 && y < height;
+
+  function isInCellBounds(x: number, y: number) {
+    return x >= 0 && x < cellWidth && y >= 0 && y < cellHeight;
+  }
 
   const stack = [{ x: 0, y: 0 }];
   visited[0][0] = true;
-  carved[0][0] = true;
+  WALLS[1][1] = false; // mark starting cell as path (top-left cell at (0,0))
 
   while (stack.length > 0) {
     const { x, y } = stack[stack.length - 1];
 
+    // Shuffle directions
     const shuffled = directions.sort(() => Math.random() - 0.5);
     let moved = false;
 
     for (const { dx, dy } of shuffled) {
-      const nx = x + dx * 2;
-      const ny = y + dy * 2;
+      const nx = x + dx;
+      const ny = y + dy;
 
-      if (isInBounds(nx, ny) && !visited[ny][nx]) {
-        const mx = x + dx; // wall between
-        const my = y + dy;
+      if (isInCellBounds(nx, ny) && !visited[ny][nx]) {
+        // Remove wall between (x,y) and (nx, ny)
+        const wallX = x * 2 + dx + 1; // wall between cells in WALLS coords
+        const wallY = y * 2 + dy + 1;
+
+        // Mark cell at (nx, ny) and wall between as path (false)
+        WALLS[ny * 2 + 1][nx * 2 + 1] = false;
+        WALLS[wallY][wallX] = false;
 
         visited[ny][nx] = true;
-        carved[ny][nx] = true;
-        carved[my][mx] = true;
-
         stack.push({ x: nx, y: ny });
         moved = true;
         break;
@@ -80,34 +92,18 @@ export function generateMazeWalls() {
     }
 
     if (!moved) {
-      stack.pop(); // backtrack
-    }
-  }
-
-  // Initialize WALLS with true (assume everything is a wall)
-  WALLS = Array.from({ length: height }, () => Array(width).fill(true));
-
-  // Set carved positions as not walls
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (carved[y][x]) {
-        WALLS[y][x] = false;
-      }
+      stack.pop();
     }
   }
 }
 
-function createMazeImage() {
-  const originalHeight = WALLS.length;
-  const originalWidth = WALLS[0].length;
-
-  // Output image size: expanded with walls between pixels
-  const width = originalWidth * 2 - 1;
-  const height = originalHeight * 2 - 1;
+function createMazeImage(callback: () => void) {
+  const height = WALLS.length;
+  const width = WALLS[0].length;
 
   const png = new PNG({ width, height });
 
-  // Helper: paint pixel in output image
+  // Helper: set pixel color
   function setPixel(x: number, y: number, r: number, g: number, b: number) {
     if (x < 0 || x >= width || y < 0 || y >= height) return;
     const idx = (width * y + x) << 2;
@@ -117,61 +113,42 @@ function createMazeImage() {
     png.data[idx + 3] = 255;
   }
 
-  // First, set all pixels to black (walls)
+  // Paint walls and paths
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      setPixel(x, y, 0, 0, 0); // default black walls
-    }
-  }
-
-  // Paint original pixels (paths) on even coordinates
-  for (let y = 0; y < originalHeight; y++) {
-    for (let x = 0; x < originalWidth; x++) {
-      if (!WALLS[y][x]) {
-        // path cell — paint original pixel color from FLAG_IMAGE
-        const { r, g, b } = hexToRgb(FLAG_IMAGE[y][x]);
-        setPixel(2 * x, 2 * y, r, g, b);
+      if (WALLS[y][x]) {
+        // Wall pixel - paint black
+        setPixel(x, y, 0, 0, 0);
       } else {
-        // wall cell, keep black (already set)
-      }
-    }
-  }
+        // Path pixel - paint color from FLAG_IMAGE if even-even index (cell)
+        if (y % 2 === 0 && x % 2 === 0) {
+          const cellY = y / 2;
+          const cellX = x / 2;
+          const hex = FLAG_IMAGE[cellY][cellX];
+          const { r, g, b } = hexToRgb(hex);
+          setPixel(x, y, r, g, b);
+        } else {
+          // Wall between cells carved as path - paint color of top or left cell
+          let cellHex: string | undefined;
 
-  // Horizontal paths between cells
-  for (let y = 0; y < originalHeight; y++) {
-    for (let x = 0; x < originalWidth - 1; x++) {
-      if (!WALLS[y][x] && !WALLS[y][x + 1]) {
-        // no wall between, paint path pixel between original pixels
-        // Use average color or one side color - here choose left side's color
-        const { r, g, b } = hexToRgb(FLAG_IMAGE[y][x]);
-        setPixel(2 * x + 1, 2 * y, r, g, b);
-      } // else keep black wall pixel
-    }
-  }
+          if (y % 2 === 1 && x % 2 === 0) {
+            // vertical wall between two cells above and below, use cell above
+            if (y > 0) cellHex = FLAG_IMAGE[(y - 1) / 2][x / 2];
+          } else if (y % 2 === 0 && x % 2 === 1) {
+            // horizontal wall between two cells left and right, use cell to the left
+            if (x > 0) cellHex = FLAG_IMAGE[y / 2][(x - 1) / 2];
+          } else if (y % 2 === 1 && x % 2 === 1) {
+            // diagonal wall, use top-left cell
+            if (y > 0 && x > 0) cellHex = FLAG_IMAGE[(y - 1) / 2][(x - 1) / 2];
+          }
 
-  // Vertical paths between cells
-  for (let y = 0; y < originalHeight - 1; y++) {
-    for (let x = 0; x < originalWidth; x++) {
-      if (!WALLS[y][x] && !WALLS[y + 1][x]) {
-        // no wall between vertically
-        const { r, g, b } = hexToRgb(FLAG_IMAGE[y][x]);
-        setPixel(2 * x, 2 * y + 1, r, g, b);
-      }
-    }
-  }
-
-  // Diagonal intersections
-  for (let y = 0; y < originalHeight - 1; y++) {
-    for (let x = 0; x < originalWidth - 1; x++) {
-      if (
-        !WALLS[y][x] &&
-        !WALLS[y + 1][x] &&
-        !WALLS[y][x + 1] &&
-        !WALLS[y + 1][x + 1]
-      ) {
-        // If all four corners are paths, paint intersection path pixel
-        const { r, g, b } = hexToRgb(FLAG_IMAGE[y][x]);
-        setPixel(2 * x + 1, 2 * y + 1, r, g, b);
+          if (!cellHex) {
+            setPixel(x, y, 0, 0, 0);
+          } else {
+            const { r, g, b } = hexToRgb(cellHex);
+            setPixel(x, y, r, g, b);
+          }
+        }
       }
     }
   }
@@ -182,50 +159,86 @@ function createMazeImage() {
 
   outStream.on("finish", () => {
     console.log("Maze exploded image created: maze.png");
+    callback();
   });
 }
 
 function canMoveTo(x: number, y: number): boolean {
   return (
-    x >= 0 && x < WALLS[0].length &&
-    y >= 0 && y < WALLS.length &&
+    y >= 0 &&
+    y < WALLS.length &&
+    x >= 0 &&
+    x < WALLS[0].length &&
     !WALLS[y][x]
   );
 }
 
 export function canMoveBetween(x1: number, y1: number, x2: number, y2: number): boolean {
-  // Check bounds
   if (!canMoveTo(x1, y1) || !canMoveTo(x2, y2)) return false;
 
   const dx = Math.abs(x1 - x2);
   const dy = Math.abs(y1 - y2);
 
-  // Only allow cardinal movement
+  // Allow moves only between adjacent path pixels (should be 1 in either x or y)
   if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
     return true;
   }
 
-  return false; // diagonal or invalid step
+  return false;
 }
 
-export function getSmallMazeData(centerX: number, centerY: number, smallMazeRadius: number = 10): { walls: boolean[][], colors: string[][] } {
-  const walls: boolean[][] = [];
+
+export function getSmallMazeData(
+  centerX: number,
+  centerY: number,
+  smallMazeRadius: number = 10
+): { walls: boolean[][]; colors: string[][] } {
+  // Colors grid: (2*smallMazeRadius+1) x (2*smallMazeRadius+1)
+  // Walls grid: (2*smallMazeRadius+1)*2-1 x (2*smallMazeRadius+1)*2-1
+  const colorSize = 2 * smallMazeRadius - 1;
+  const wallSize = colorSize * 2 + 1;
+
   const colors: string[][] = [];
+  const walls: boolean[][] = [];
 
-  const minY = Math.max(0, centerY - smallMazeRadius);
-  const maxY = Math.min(WALLS.length - 1, centerY + smallMazeRadius);
-  const minX = Math.max(0, centerX - smallMazeRadius);
-  const maxX = Math.min(WALLS[0].length - 1, centerX + smallMazeRadius);
-
-  for (let y = minY; y <= maxY; y++) {
-    const wallRow: boolean[] = [];
+  // Prepare colors (cell grid)
+  for (let y = 0; y < colorSize; y++) {
     const colorRow: string[] = [];
-    for (let x = minX; x <= maxX; x++) {
-      wallRow.push(WALLS[y][x]);
-      colorRow.push(FLAG_IMAGE[y][x]);
+    const mazeY = centerY - smallMazeRadius + y;
+    for (let x = 0; x < colorSize; x++) {
+      const mazeX = centerX - smallMazeRadius + x;
+      if (
+        mazeY >= 0 &&
+        mazeY < FLAG_IMAGE.length &&
+        mazeX >= 0 &&
+        mazeX < FLAG_IMAGE[0].length
+      ) {
+        colorRow.push(FLAG_IMAGE[mazeY][mazeX]);
+      } else {
+        colorRow.push(""); // or "#000000"
+      }
+    }
+    colors.push(colorRow);
+  }
+
+  // Prepare walls (wall grid)
+  for (let y = 0; y < wallSize; y++) {
+    const wallRow: boolean[] = [];
+    const mazeY = centerY * 2 - (wallSize >> 1) + y;
+    for (let x = 0; x < wallSize; x++) {
+      const mazeX = centerX * 2 - (wallSize >> 1) + x;
+      if (
+        mazeY >= 0 &&
+        mazeY < WALLS.length &&
+        mazeX >= 0 &&
+        mazeX < WALLS[0].length
+      ) {
+        wallRow.push(WALLS[mazeY][mazeX]);
+      } else {
+        wallRow.push(false);
+      }
     }
     walls.push(wallRow);
-    colors.push(colorRow);
   }
 
   return { walls, colors };

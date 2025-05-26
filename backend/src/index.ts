@@ -14,7 +14,7 @@ function initializeSocketServer() {
     console.log("A user connected with ID:", socket.id);
     userPositions.set(socket.id, { x: 0, y: 0 });
 
-    socket.emit("mazeData", getSmallMazeData(0, 0)); // Send initial maze data
+    socket.emit("mazeUpdate", getSmallMazeData(0, 0)); // Send initial maze data
 
     socket.on("moveDirection", (data) => {
       const { direction } = data;

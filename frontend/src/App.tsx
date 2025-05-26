@@ -1,50 +1,74 @@
 import { useEffect, useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import { socket } from './socket'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [walls, setWalls] = useState<boolean[][]>([]);
+  const [colors, setColors] = useState<string[][]>([]);
 
   useEffect(() => {
+    socket.on('mazeUpdate', (data) => {
+      console.log('Maze update received:', data);
+      setWalls(data.walls);
+      setColors(data.colors);
+    });
+
     socket.on('connect', () => {
-      console.log('Connected to server with ID:', socket.id)
-    })
-    socket.on('message', (msg) => {
-      console.log('Message received from server:', msg)
-    })
+      console.log('Connected to server with ID:', socket.id);
+    });
 
     return () => {
-      socket.off('connect')
-      socket.off('message')
-    }
-  });
+      socket.off('connect');
+      socket.off('mazeUpdate');
+    };
+  }, []);
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${colors[0]?.length || 1}, 1fr)`,
+          gridTemplateRows: `repeat(${colors.length || 1}, 1fr)`,
+          border: '5px solid black',
+        }}
+      >
+        {colors.map((row, rowIndex) =>
+          row.map((color, colIndex) => {
+            const y = rowIndex * 2;
+            const x = colIndex * 2;
+
+            const wallTop = (y > 0) ? walls[y - 1][x] : false;
+            const wallBottom = (y + 1 < walls.length) ? (walls[y + 1][x]) : false;
+            const wallLeft = (x > 0) ? (walls[y][x - 1]) : false;
+            const wallRight = (x + 1 < walls[0].length) ? (walls[y][x + 1]) : false;
+
+            const borderStyle = '2px solid black'
+            return (
+              <div
+                key={`${rowIndex}-${colIndex}`}
+                style={{
+                  width: '30px',
+                  height: '30px',
+                  backgroundColor: color || 'none',
+                  boxSizing: 'border-box',
+                  borderTop: wallTop ? borderStyle : 'none',
+                  borderBottom: wallBottom ? borderStyle : 'none',
+                  borderLeft: wallLeft ? borderStyle : 'none',
+                  borderRight: wallRight ? borderStyle : 'none',
+                }}
+              />
+            );
+          })
+        )}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
+
+
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
     </>
-  )
+  );
 }
 
-export default App
+export default App;
