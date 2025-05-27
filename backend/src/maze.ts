@@ -6,8 +6,6 @@ export const FLAG_IMAGE: string[][] = []; // Hex values of pixels in the flag im
 export let WALLS: boolean[][]; // Global 2D array for wall status (true = wall, false = path)
 
 export function initializeMaze(callback: () => void) {
-  // Read the flag image and parse
-
   fs.createReadStream('flag-out.png')
     .pipe(new PNG())
     .on('parsed', function () {
@@ -45,7 +43,14 @@ export function generateMazeWalls() {
   const height = cellHeight * 2 + 1;
 
   // Initialize all as walls (true)
-  WALLS = Array.from({ length: height }, () => Array(width).fill(true));
+  WALLS = Array.from({ length: height }, () => Array(width).fill(false));
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (y % 2 === 1 || x % 2 === 1) {
+        WALLS[y][x] = true;
+      }
+    }
+  }
 
   // visited for cell coordinates
   const visited = Array.from({ length: cellHeight }, () => Array(cellWidth).fill(false));
@@ -116,8 +121,7 @@ function createMazeImage(callback: () => void) {
   // Paint walls and paths
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      if (WALLS[y][x]) {
-        // Wall pixel - paint black
+      if (WALLS[y][x] || (x % 2 + y % 2 === 0)) {
         setPixel(x, y, 0, 0, 0);
       } else {
         // Path pixel - paint color from FLAG_IMAGE if even-even index (cell)
@@ -163,68 +167,41 @@ function createMazeImage(callback: () => void) {
   });
 }
 
-function canMoveTo(x: number, y: number): boolean {
+export function isAdjacent(x1: any, y1: any, x2: any, y2: any): boolean {
   return (
-    y >= 0 &&
-    y < FLAG_IMAGE.length &&
-    x >= 0 &&
-    x < FLAG_IMAGE[0].length
+    !(Math.abs(x1 - x2) + Math.abs(y1 - y2) > 1)
   );
 }
 
-export function canMoveBetween(x1: number, y1: number, x2: number, y2: number): boolean {
-  if (!canMoveTo(x1, y1) || !canMoveTo(x2, y2)) return false;
-
-  const dx = Math.abs(x1 - x2);
-  const dy = Math.abs(y1 - y2);
-
-  // Must be adjacent cells
-  if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
-    const wallX = (x1 + x2 + 1);
-    const wallY = (y1 + y2 + 1);
-
-    // // Check if wall in between is passable (false means path)
-    // console.log(`Checking wall at (${wallX}, ${wallY}): ${WALLS[wallY][wallX]}`);
-
-    // // print small section of WALLS for debugging as 1 (wall) and 0 (path)
-    // for (let i = -5; i <= 5; i++) {
-    //   let rowStr = "";
-    //   for (let j = -5; j <= 5; j++) {
-    //     const debugY = wallY + i;
-    //     const debugX = wallX + j;
-    //     if (debugY >= 0 && debugY < WALLS.length && debugX >= 0 && debugX < WALLS[0].length) {
-    //       rowStr += WALLS[debugY][debugX] ? "1" : "0";
-    //     } else {
-    //       rowStr += " ";
-    //     }
-    //   }
-    //   console.log(rowStr);
-    // }
-
-    if (!WALLS[wallY][wallX]) {
-      return true;
-    }
-  }
-
-  return false;
+function canMoveTo(x: number, y: number): boolean {
+  return !(
+    y < 0 ||
+    y >= FLAG_IMAGE.length ||
+    x < 0 ||
+    x > FLAG_IMAGE[0].length
+  );
 }
 
+export function canMoveBetween(x1: any, y1: any, x2: any, y2: any): boolean {
+  if (!canMoveTo(x1, y1) || !canMoveTo(x2, y2)) return false;
 
+  const wallX = (x1 + x2 + 1);
+  const wallY = (y1 + y2 + 1);
+
+  return !WALLS.at(wallY)?.at(wallX);
+}
 
 export function getSmallMazeData(
   centerX: number,
   centerY: number,
   smallMazeRadius: number = 10
 ): { walls: boolean[][]; colors: string[][] } {
-  // Colors grid: (2*smallMazeRadius+1) x (2*smallMazeRadius+1)
-  // Walls grid: (2*smallMazeRadius+1)*2-1 x (2*smallMazeRadius+1)*2-1
   const colorSize = 2 * smallMazeRadius - 1;
   const wallSize = colorSize * 2 + 1;
 
   const colors: string[][] = [];
   const walls: boolean[][] = [];
 
-  // Prepare colors (cell grid)
   for (let y = 0; y < colorSize; y++) {
     const colorRow: string[] = [];
     const mazeY = centerY - (smallMazeRadius - 1) + y;
@@ -238,13 +215,12 @@ export function getSmallMazeData(
       ) {
         colorRow.push(FLAG_IMAGE[mazeY][mazeX]);
       } else {
-        colorRow.push(""); // or "#000000"
+        colorRow.push("");
       }
     }
     colors.push(colorRow);
   }
 
-  // Prepare walls (wall grid)
   for (let y = 0; y < wallSize; y++) {
     const wallRow: boolean[] = [];
     const mazeY = centerY * 2 - ((wallSize) >> 1) + 2 + y;

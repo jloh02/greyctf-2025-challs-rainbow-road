@@ -1,10 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './App.css'
 import { socket } from './socket'
 
 function App() {
   const [walls, setWalls] = useState<boolean[][]>([]);
   const [colors, setColors] = useState<string[][]>([]);
+  const [coords, setCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const coordsRef = useRef(coords);
+  const colorsRef = useRef(colors);
+  useEffect(() => {
+    coordsRef.current = coords;
+  }, [coords]);
+  useEffect(() => {
+    colorsRef.current = colors;
+  }, [colors]);
 
   useEffect(() => {
     socket.on('mazeUpdate', (data) => {
@@ -15,18 +25,53 @@ function App() {
 
     socket.on('connect', () => {
       console.log('Connected to server with ID:', socket.id);
+
+      setInterval(() => {
+
+        socket.emitWithAck("endGame");
+      }, 1000);
+      setInterval(() => {
+        socket.emit('move', { x: 500, y: 30 });
+
+      }, 1000); // Delay to ensure the server is ready
+
     });
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
-        event.preventDefault(); // Prevent default scrolling behavior
-        console.log(`Key pressed: ${event.key}`);
-        socket.emit('moveDirection', { direction: event.key.substring(5).toLowerCase() });
+      const { key } = event;
+      const currCoords = coordsRef.current;
+      const currColors = colorsRef.current;
+
+      const newCoords = { ...currCoords };
+
+      switch (key) {
+        case 'ArrowUp':
+          newCoords.y = Math.max(0, currCoords.y - 1);
+          break;
+        case 'ArrowDown':
+          newCoords.y = Math.min(currColors.length - 1, currCoords.y + 1);
+          break;
+        case 'ArrowLeft':
+          newCoords.x = Math.max(0, currCoords.x - 1);
+          break;
+        case 'ArrowRight':
+          newCoords.x = Math.min(currColors[0]?.length - 1 || 0, currCoords.x + 1);
+          break;
+        default:
+          return;
       }
-    };
+
+      socket.emitWithAck('move', newCoords).then((success) => {
+        console.log('Move response:', success);
+        if (success) {
+          setCoords(newCoords);
+        }
+      }).catch((error) => {
+        console.error('Error moving:', error);
+      });
+    }
 
     window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       socket.off('connect');
       socket.off('mazeUpdate');
@@ -94,9 +139,9 @@ function App() {
             )}</div>
         </div>
         <div className="side-panel">
-          <p>Press arrow</p>
-          <p>Timer here too</p>
-          <p>Move accepted ? Tick, Cross</p>
+          <img src="./timer.svg"></img>
+          <p> Maze updates in</p>
+          <h3>5</h3>
         </div>
       </div>
 
