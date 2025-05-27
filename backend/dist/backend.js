@@ -35,11 +35,11 @@ function generateMazeWalls() {
   const width = cellWidth * 2 + 1;
   const height = cellHeight * 2 + 1;
 
-  WALLS = Array.from({ length: height }, () => Array(width).fill(false));
+  const tmpWalls = Array.from({ length: height }, () => Array(width).fill(false));
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (y % 2 === 1 || x % 2 === 1) {
-        WALLS[y][x] = true;
+        tmpWalls[y][x] = true;
       }
     }
   }
@@ -58,7 +58,7 @@ function generateMazeWalls() {
 
   const stack = [{ x: 0, y: 0 }];
   visited[0][0] = true;
-  WALLS[1][1] = false;
+  tmpWalls[1][1] = false;
 
   while (stack.length > 0) {
     const { x, y } = stack[stack.length - 1];
@@ -72,8 +72,8 @@ function generateMazeWalls() {
       if (isInCellBounds(nx, ny) && !visited[ny][nx]) {
         const wallX = x * 2 + dx + 1;
         const wallY = y * 2 + dy + 1;
-        WALLS[ny * 2 + 1][nx * 2 + 1] = false;
-        WALLS[wallY][wallX] = false;
+        tmpWalls[ny * 2 + 1][nx * 2 + 1] = false;
+        tmpWalls[wallY][wallX] = false;
         visited[ny][nx] = true;
         stack.push({ x: nx, y: ny });
         moved = true;
@@ -92,23 +92,26 @@ function generateMazeWalls() {
         const wallX = x * 2;
         const wallY = y * 2 + 1;
         if (wallX < width && wallY < height) {
-          WALLS[wallY][wallX] = false;
+          tmpWalls[wallY][wallX] = false;
         }
       }
       if (Math.random() < 0.1) {
         const wallX = x * 2 + 1;
         const wallY = y * 2;
         if (wallX < width && wallY < height) {
-          WALLS[wallY][wallX] = false;
+          tmpWalls[wallY][wallX] = false;
         }
       }
     }
   }
 
   for (let y = 0; y < height; y++) {
-    WALLS[y][200] = true;
+    tmpWalls[y][200] = true;
   }
+
+  WALLS = tmpWalls;
 }
+
 
 function createMazeImage(callback) {
   const height = WALLS.length;
@@ -298,6 +301,12 @@ function initializeSocketServer() {
     socket.on("endGame", () => handleDisconnect(socket));
     socket.on("disconnect", () => handleDisconnect(socket));
   });
+  setInterval(() => {
+    generateMazeWalls();
+    for (const [id, position] of userPositions.entries()) {
+      io.to(id).emit("mazeUpdate", {isTimer:true, ...getSmallMazeData(position.x, position.y)});
+    }
+  }, 4500);
 }
 
 initializeMaze(initializeSocketServer);

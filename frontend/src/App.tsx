@@ -6,6 +6,8 @@ function App() {
   const [walls, setWalls] = useState<boolean[][]>([]);
   const [colors, setColors] = useState<string[][]>([]);
   const [coords, setCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
+  const [timer, setTimer] = useState<number>(5);
 
   const coordsRef = useRef(coords);
   useEffect(() => {
@@ -13,8 +15,23 @@ function App() {
   }, [coords]);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const elapsed = Math.floor((now - lastUpdate) / 1000);
+      if (elapsed >= 5) {
+        setTimer(0);
+        clearInterval(interval);
+      } else {
+        setTimer(5 - elapsed);
+      }
+    }, 200);
+    return () => clearInterval(interval);
+  }, [lastUpdate]);
+
+  useEffect(() => {
     socket.on('mazeUpdate', (data) => {
       // console.log('Maze update received:', data);
+      if (data.isTimer) setLastUpdate(Date.now());
       setWalls(data.walls);
       setColors(data.colors);
     });
@@ -126,7 +143,7 @@ function App() {
         <div className="side-panel">
           <img src="./timer.svg"></img>
           <p> Maze updates in</p>
-          <h3>5</h3>
+          <h3>{timer}</h3>
         </div>
       </div>
 
