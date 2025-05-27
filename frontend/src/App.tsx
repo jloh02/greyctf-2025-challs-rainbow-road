@@ -14,7 +14,7 @@ function App() {
 
   useEffect(() => {
     socket.on('mazeUpdate', (data) => {
-      console.log('Maze update received:', data);
+      // console.log('Maze update received:', data);
       setWalls(data.walls);
       setColors(data.colors);
     });
@@ -47,7 +47,7 @@ function App() {
       }
 
       socket.emitWithAck('move', newCoords).then((success) => {
-        console.log('Move response:', success);
+        // console.log('Move response:', success);
         if (success) {
           setCoords(newCoords);
         }
