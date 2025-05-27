@@ -1,47 +1,43 @@
-import fs from "fs";
-import { PNG } from "pngjs";
-import { hexToRgb, rgbToHex } from "./utils";
+const Server = require("socket.io").Server;
+const fs = require("fs");
+const PNG = require("pngjs").PNG;
 
-export const FLAG_IMAGE: string[][] = []; // Hex values of pixels in the flag image
-export let WALLS: boolean[][]; // Global 2D array for wall status (true = wall, false = path)
+const userPositions = new Map();
+const FLAG_IMAGE = [];
+let WALLS;
 
-export function initializeMaze(callback: () => void) {
+function initializeMaze(callback) {
   fs.createReadStream('flag-out.png')
     .pipe(new PNG())
     .on('parsed', function () {
-      // this.width and this.height give the image dimensions
-      // this.data is a Buffer containing pixel data in RGBA format
+
       for (let y = 0; y < this.height; y++) {
         const row = [];
         for (let x = 0; x < this.width; x++) {
-          const idx = (this.width * y + x) << 2; // same as *4
-
+          const idx = (this.width * y + x) << 2;
           const r = this.data[idx];
           const g = this.data[idx + 1];
           const b = this.data[idx + 2];
-          // const a = this.data[idx + 3];
-
           row.push(rgbToHex(r, g, b));
         }
         FLAG_IMAGE.push(row);
       }
 
       generateMazeWalls();
-      createMazeImage(callback);
+      // createMazeImage(callback);
+      callback();
     });
 }
 
-// TODO: prune even more walls so that maze is more open
-// Use reverse backtracking algorithm to generate a maze using size of FLAG_IMAGE
-export function generateMazeWalls() {
+function generateMazeWalls() {
   const cellWidth = FLAG_IMAGE[0].length;
   const cellHeight = FLAG_IMAGE.length;
 
-  // New WALLS size with walls between cells
+
   const width = cellWidth * 2 + 1;
   const height = cellHeight * 2 + 1;
 
-  // Initialize all as walls (true)
+
   WALLS = Array.from({ length: height }, () => Array(width).fill(false));
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -51,7 +47,7 @@ export function generateMazeWalls() {
     }
   }
 
-  // visited for cell coordinates
+
   const visited = Array.from({ length: cellHeight }, () => Array(cellWidth).fill(false));
   const directions = [
     { dx: 1, dy: 0 },
@@ -60,18 +56,18 @@ export function generateMazeWalls() {
     { dx: 0, dy: -1 },
   ];
 
-  function isInCellBounds(x: number, y: number) {
+  function isInCellBounds(x, y) {
     return x >= 0 && x < cellWidth && y >= 0 && y < cellHeight;
   }
 
   const stack = [{ x: 0, y: 0 }];
   visited[0][0] = true;
-  WALLS[1][1] = false; // mark starting cell as path (top-left cell at (0,0))
+  WALLS[1][1] = false;
 
   while (stack.length > 0) {
     const { x, y } = stack[stack.length - 1];
 
-    // Shuffle directions
+
     const shuffled = directions.sort(() => Math.random() - 0.5);
     let moved = false;
 
@@ -80,11 +76,11 @@ export function generateMazeWalls() {
       const ny = y + dy;
 
       if (isInCellBounds(nx, ny) && !visited[ny][nx]) {
-        // Remove wall between (x,y) and (nx, ny)
-        const wallX = x * 2 + dx + 1; // wall between cells in WALLS coords
+
+        const wallX = x * 2 + dx + 1;
         const wallY = y * 2 + dy + 1;
 
-        // Mark cell at (nx, ny) and wall between as path (false)
+
         WALLS[ny * 2 + 1][nx * 2 + 1] = false;
         WALLS[wallY][wallX] = false;
 
@@ -101,14 +97,12 @@ export function generateMazeWalls() {
   }
 }
 
-function createMazeImage(callback: () => void) {
+function createMazeImage(callback) {
   const height = WALLS.length;
   const width = WALLS[0].length;
-
   const png = new PNG({ width, height });
 
-  // Helper: set pixel color
-  function setPixel(x: number, y: number, r: number, g: number, b: number) {
+  function setPixel(x, y, r, g, b) {
     if (x < 0 || x >= width || y < 0 || y >= height) return;
     const idx = (width * y + x) << 2;
     png.data[idx] = r;
@@ -117,13 +111,13 @@ function createMazeImage(callback: () => void) {
     png.data[idx + 3] = 255;
   }
 
-  // Paint walls and paths
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (WALLS[y][x] || (x % 2 + y % 2 === 0)) {
         setPixel(x, y, 0, 0, 0);
       } else {
-        // Path pixel - paint color from FLAG_IMAGE if even-even index (cell)
+
         if (y % 2 === 0 && x % 2 === 0) {
           const cellY = y / 2;
           const cellX = x / 2;
@@ -131,17 +125,12 @@ function createMazeImage(callback: () => void) {
           const { r, g, b } = hexToRgb(hex);
           setPixel(x, y, r, g, b);
         } else {
-          // Wall between cells carved as path - paint color of top or left cell
-          let cellHex: string | undefined;
-
+          let cellHex;
           if (y % 2 === 1 && x % 2 === 0) {
-            // vertical wall between two cells above and below, use cell above
             if (y > 0) cellHex = FLAG_IMAGE[(y - 1) / 2][x / 2];
           } else if (y % 2 === 0 && x % 2 === 1) {
-            // horizontal wall between two cells left and right, use cell to the left
             if (x > 0) cellHex = FLAG_IMAGE[y / 2][(x - 1) / 2];
           } else if (y % 2 === 1 && x % 2 === 1) {
-            // diagonal wall, use top-left cell
             if (y > 0 && x > 0) cellHex = FLAG_IMAGE[(y - 1) / 2][(x - 1) / 2];
           }
 
@@ -156,7 +145,6 @@ function createMazeImage(callback: () => void) {
     }
   }
 
-  // Write PNG to file
   const outStream = fs.createWriteStream("maze.png");
   png.pack().pipe(outStream);
 
@@ -166,13 +154,13 @@ function createMazeImage(callback: () => void) {
   });
 }
 
-export function isAdjacent(x1: any, y1: any, x2: any, y2: any): boolean {
+function isAdjacent(x1, y1, x2, y2) {
   return (
     !(Math.abs(x1 - x2) + Math.abs(y1 - y2) > 1)
   );
 }
 
-function canMoveTo(x: number, y: number): boolean {
+function canMoveTo(x, y) {
   return !(
     y < 0 ||
     y >= FLAG_IMAGE.length ||
@@ -181,7 +169,7 @@ function canMoveTo(x: number, y: number): boolean {
   );
 }
 
-export function canMoveBetween(x1: any, y1: any, x2: any, y2: any): boolean {
+function canMoveBetween(x1, y1, x2, y2) {
   if (!canMoveTo(x1, y1) || !canMoveTo(x2, y2)) return false;
 
   const wallX = (x1 + x2 + 1);
@@ -190,19 +178,19 @@ export function canMoveBetween(x1: any, y1: any, x2: any, y2: any): boolean {
   return !WALLS.at(wallY)?.at(wallX);
 }
 
-export function getSmallMazeData(
-  centerX: number,
-  centerY: number,
-  smallMazeRadius: number = 10
-): { walls: boolean[][]; colors: string[][] } {
+function getSmallMazeData(
+  centerX,
+  centerY,
+  smallMazeRadius = 10
+) {
   const colorSize = 2 * smallMazeRadius - 1;
   const wallSize = colorSize * 2 + 1;
 
-  const colors: string[][] = [];
-  const walls: boolean[][] = [];
+  const colors = [];
+  const walls = [];
 
   for (let y = 0; y < colorSize; y++) {
-    const colorRow: string[] = [];
+    const colorRow = [];
     const mazeY = centerY - (smallMazeRadius - 1) + y;
     for (let x = 0; x < colorSize; x++) {
       const mazeX = centerX - (smallMazeRadius - 1) + x;
@@ -221,7 +209,7 @@ export function getSmallMazeData(
   }
 
   for (let y = 0; y < wallSize; y++) {
-    const wallRow: boolean[] = [];
+    const wallRow = [];
     const mazeY = centerY * 2 - ((wallSize) >> 1) + 2 + y;
     for (let x = 0; x < wallSize; x++) {
       const mazeX = centerX * 2 - ((wallSize) >> 1) + 2 + x;
@@ -241,3 +229,65 @@ export function getSmallMazeData(
 
   return { walls, colors };
 }
+
+const io = new Server({
+  cors: {
+    origin: process.env.NODE_ENV === "production" ? undefined : "http://localhost:5173",
+  },
+});
+
+function handleMove(data, socket, callback) {
+  const { x, y } = data;
+  const position = userPositions.get(socket.id);
+
+  if (
+    x >= 0 && x < FLAG_IMAGE[0].length &&
+    y >= 0 && y < FLAG_IMAGE.length &&
+    isAdjacent(x, y, position?.x, position?.y) &&
+    canMoveBetween(x, y, position?.x, position?.y)
+  ) {
+    userPositions.set(socket.id, { x, y });
+    socket.emit("mazeUpdate", getSmallMazeData(x, y));
+    if (callback) callback(true);
+  }
+}
+
+function handleDisconnect(socket) {
+  userPositions.delete(socket.id);
+  console.log("A user disconnected with ID:", socket.id);
+}
+
+function rgbToHex(r, g, b) {
+  return '#' +
+    r.toString(16).padStart(2, '0') +
+    g.toString(16).padStart(2, '0') +
+    b.toString(16).padStart(2, '0');
+}
+
+function hexToRgb(hex) {
+  const match = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
+  if (!match) {
+    throw new Error(`Invalid hex color: ${hex}`);
+  }
+  return {
+    r: parseInt(match[1], 16),
+    g: parseInt(match[2], 16),
+    b: parseInt(match[3], 16),
+  };
+}
+
+
+function initializeSocketServer() {
+  io.on("connection", (socket) => {
+    console.log("A user connected with ID:", socket.id);
+    userPositions.set(socket.id, { x: 0, y: 0 });
+
+    socket.emit("mazeUpdate", getSmallMazeData(0, 0));
+    socket.on("move", (data, callback) => handleMove(data, socket, callback));
+    socket.on("endGame", () => handleDisconnect(socket));
+    socket.on("disconnect", () => handleDisconnect(socket));
+  });
+}
+
+initializeMaze(initializeSocketServer);
+io.listen(4000);

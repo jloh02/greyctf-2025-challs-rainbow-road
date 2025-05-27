@@ -8,13 +8,9 @@ function App() {
   const [coords, setCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const coordsRef = useRef(coords);
-  const colorsRef = useRef(colors);
   useEffect(() => {
     coordsRef.current = coords;
   }, [coords]);
-  useEffect(() => {
-    colorsRef.current = colors;
-  }, [colors]);
 
   useEffect(() => {
     socket.on('mazeUpdate', (data) => {
@@ -25,37 +21,26 @@ function App() {
 
     socket.on('connect', () => {
       console.log('Connected to server with ID:', socket.id);
-
-      setInterval(() => {
-
-        socket.emitWithAck("endGame");
-      }, 1000);
-      setInterval(() => {
-        socket.emit('move', { x: 500, y: 30 });
-
-      }, 1000); // Delay to ensure the server is ready
-
     });
 
     const handleKeyDown = (event: KeyboardEvent) => {
       const { key } = event;
       const currCoords = coordsRef.current;
-      const currColors = colorsRef.current;
 
       const newCoords = { ...currCoords };
 
       switch (key) {
         case 'ArrowUp':
-          newCoords.y = Math.max(0, currCoords.y - 1);
+          newCoords.y--;
           break;
         case 'ArrowDown':
-          newCoords.y = Math.min(currColors.length - 1, currCoords.y + 1);
+          newCoords.y++;
           break;
         case 'ArrowLeft':
-          newCoords.x = Math.max(0, currCoords.x - 1);
+          newCoords.x--;
           break;
         case 'ArrowRight':
-          newCoords.x = Math.min(currColors[0]?.length - 1 || 0, currCoords.x + 1);
+          newCoords.x++;
           break;
         default:
           return;

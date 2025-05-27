@@ -13,19 +13,15 @@ function handleMove(data: any, socket: Socket<DefaultEventsMap, DefaultEventsMap
   const { x, y } = data;
   const position = userPositions.get(socket.id);
 
-  console.log(`User ${socket.id} moving to (${x}, ${y}) from (${position?.x}, ${position?.y})`);
-  console.log(isAdjacent(x, y, position?.x, position?.y));
-  console.log(canMoveBetween(x, y, position?.x, position?.y));
-
   if (
-    x >= 0 && x < FLAG_IMAGE.length &&
+    x >= 0 && x < FLAG_IMAGE[0].length &&
     y >= 0 && y < FLAG_IMAGE.length &&
     isAdjacent(x, y, position?.x, position?.y) &&
     canMoveBetween(x, y, position?.x, position?.y)
   ) {
     userPositions.set(socket.id, { x, y });
     socket.emit("mazeUpdate", getSmallMazeData(x, y));
-    callback(true);
+    if (callback) callback(true);
   }
 }
 
