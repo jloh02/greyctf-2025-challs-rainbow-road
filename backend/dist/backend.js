@@ -24,8 +24,8 @@ function initializeMaze(callback) {
       }
 
       generateMazeWalls();
-      createMazeImage(callback);
-      // callback();
+      // createMazeImage(callback);
+      callback();
     });
 }
 
@@ -95,7 +95,6 @@ function generateMazeWalls() {
           WALLS[wallY][wallX] = false;
         }
       }
-
       if (Math.random() < 0.1) {
         const wallX = x * 2 + 1;
         const wallY = y * 2;
