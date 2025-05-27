@@ -4,7 +4,7 @@
   "description": "Backend for Rainbow Road game",
   "scripts": {
     "dev": "ts-node src/index.ts",
-    "build": "tsc",
+    "prod": "node dist/backend.js",
     "start": "node dist/index.js"
   },
   "dependencies": {
