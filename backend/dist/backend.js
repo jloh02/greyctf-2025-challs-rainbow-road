@@ -24,19 +24,16 @@ function initializeMaze(callback) {
       }
 
       generateMazeWalls();
-      // createMazeImage(callback);
-      callback();
+      createMazeImage(callback);
+      // callback();
     });
 }
 
 function generateMazeWalls() {
   const cellWidth = FLAG_IMAGE[0].length;
   const cellHeight = FLAG_IMAGE.length;
-
-
   const width = cellWidth * 2 + 1;
   const height = cellHeight * 2 + 1;
-
 
   WALLS = Array.from({ length: height }, () => Array(width).fill(false));
   for (let y = 0; y < height; y++) {
@@ -46,7 +43,6 @@ function generateMazeWalls() {
       }
     }
   }
-
 
   const visited = Array.from({ length: cellHeight }, () => Array(cellWidth).fill(false));
   const directions = [
@@ -66,8 +62,6 @@ function generateMazeWalls() {
 
   while (stack.length > 0) {
     const { x, y } = stack[stack.length - 1];
-
-
     const shuffled = directions.sort(() => Math.random() - 0.5);
     let moved = false;
 
@@ -76,14 +70,10 @@ function generateMazeWalls() {
       const ny = y + dy;
 
       if (isInCellBounds(nx, ny) && !visited[ny][nx]) {
-
         const wallX = x * 2 + dx + 1;
         const wallY = y * 2 + dy + 1;
-
-
         WALLS[ny * 2 + 1][nx * 2 + 1] = false;
         WALLS[wallY][wallX] = false;
-
         visited[ny][nx] = true;
         stack.push({ x: nx, y: ny });
         moved = true;
@@ -94,6 +84,30 @@ function generateMazeWalls() {
     if (!moved) {
       stack.pop();
     }
+  }
+
+  for (let y = 1; y < cellHeight - 1; y++) {
+    for (let x = 1; x < cellWidth - 1; x++) {
+      if (Math.random() < 0.1) {
+        const wallX = x * 2;
+        const wallY = y * 2 + 1;
+        if (wallX < width && wallY < height) {
+          WALLS[wallY][wallX] = false;
+        }
+      }
+
+      if (Math.random() < 0.1) {
+        const wallX = x * 2 + 1;
+        const wallY = y * 2;
+        if (wallX < width && wallY < height) {
+          WALLS[wallY][wallX] = false;
+        }
+      }
+    }
+  }
+
+  for (let y = 0; y < height; y++) {
+    WALLS[y][200] = true;
   }
 }
 
@@ -111,13 +125,11 @@ function createMazeImage(callback) {
     png.data[idx + 3] = 255;
   }
 
-
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (WALLS[y][x] || (x % 2 + y % 2 === 0)) {
         setPixel(x, y, 0, 0, 0);
       } else {
-
         if (y % 2 === 0 && x % 2 === 0) {
           const cellY = y / 2;
           const cellX = x / 2;

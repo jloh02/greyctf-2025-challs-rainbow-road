@@ -31,7 +31,6 @@ export function initializeMaze(callback: () => void) {
     });
 }
 
-// TODO: prune even more walls so that maze is more open
 // Use reverse backtracking algorithm to generate a maze using size of FLAG_IMAGE
 export function generateMazeWalls() {
   const cellWidth = FLAG_IMAGE[0].length;
