@@ -65,14 +65,30 @@ function App() {
                     style={{
                       width: '100%',
                       height: '100%',
-                      backgroundColor: color || 'transparent',
+                      backgroundColor: color.length ? color : 'transparent',
                       boxSizing: 'border-box',
                       borderTop: wallTop ? borderStyle : 'none',
                       borderBottom: wallBottom ? borderStyle : 'none',
                       borderLeft: wallLeft ? borderStyle : 'none',
                       borderRight: wallRight ? borderStyle : 'none',
+                      position: 'relative',
                     }}
-                  />
+                  >
+                    {(rowIndex === Math.floor(colors.length / 2)) && (colIndex === Math.floor(colors.length / 2)) && (
+                      <img
+                        src="/greycat-kart.png"
+                        alt="Player"
+                        style={{
+                          position: 'absolute',
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain',
+                          top: '0',
+                          left: '0',
+                        }}
+                      />
+                    )}
+                  </div>
                 );
               })
             )}</div>
