@@ -24,8 +24,7 @@ function initializeMaze(callback) {
       }
 
       generateMazeWalls().then(() => {
-        // createMazeImage(callback);
-        callback();
+        createMazeImage(callback);
       });
     });
 }
@@ -114,7 +113,10 @@ async function generateMazeWalls() {
 }
 
 
-function createMazeImage(callback) {
+function createMazeImage(callback, isDebug = false) {
+  if (!isDebug) {
+    return;
+  }
   const height = WALLS.length;
   const width = WALLS[0].length;
   const png = new PNG({ width, height });
