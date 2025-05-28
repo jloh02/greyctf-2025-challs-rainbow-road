@@ -9,6 +9,7 @@ function App() {
   const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
   const [lastMoveRight, setLastMoveRight] = useState<boolean>(true);
   const [timer, setTimer] = useState<number>(5);
+  const [isGameOver, setIsGameOver] = useState<boolean>(false);
 
   const coordsRef = useRef(coords);
   useEffect(() => {
@@ -89,17 +90,29 @@ function App() {
       <div id="main-container">
         <div className="side-panel">
           <h5>Greycat's been feeling kind of <i>blue</i> lately, find the hidden message to cheer him up!</h5>
-          <div className="keys">
-            <img src="./keys.svg" />
-            <h5>Use the arrow keys to move!</h5>
-          </div>
+          {!isGameOver && (<>
+            <div className="keys">
+              <img src="./keys.svg" />
+              <h5>Use the arrow keys to move!</h5>
+            </div>
+            <div className="buttons">
+              <button onClick={() => {
+                socket.emit('restart');
+                setCoords({ x: 0, y: 0 });
+              }}>Restart</button>
+              <button onClick={() => {
+                socket.emit('endGame');
+                socket.disconnect();
+                setIsGameOver(true);
+              }}>End Game</button>
+            </div>
+          </>)}
         </div>
-        <div
-          className="maze-container"
-        ><div style={{
-          gridTemplateColumns: `repeat(${colors[0]?.length || 1}, 1fr)`,
-          gridTemplateRows: `repeat(${colors.length || 1}, 1fr)`,
-        }}>
+        <div className="maze-container">
+          <div style={{
+            gridTemplateColumns: `repeat(${colors[0]?.length || 1}, 1fr)`,
+            gridTemplateRows: `repeat(${colors.length || 1}, 1fr)`,
+          }}>
             {colors.map((row, rowIndex) =>
               row.map((color, colIndex) => {
                 const y = rowIndex * 2;
@@ -144,10 +157,14 @@ function App() {
                   </div>
                 );
               })
-            )}</div>
+            )}
+          </div>
         </div>
         <div className="side-panel">
-          <div className="timer"><img src="./timer.svg" /> <h1>{timer}s</h1></div>
+          {isGameOver && <div className="game-over"><h2>Game Over</h2><h3>Refresh page to start</h3></div>}
+          {!isGameOver && (
+            <div className="timer"><img src="./timer.svg" /> <h1>{timer}s</h1></div>
+          )}
         </div>
       </div>
 

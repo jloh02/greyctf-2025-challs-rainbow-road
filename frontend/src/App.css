@@ -50,6 +50,19 @@
   margin-top: 0;
 }
 
+.side-panel>.buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.side-panel>.game-over>h2,
+.side-panel>.game-over>h3 {
+  margin: 0;
+}
+
 .maze-container {
   flex: 1;
   display: flex;
