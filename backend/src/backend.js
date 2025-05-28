@@ -10,7 +10,6 @@ function initializeMaze(callback) {
   fs.createReadStream('flag-out.png')
     .pipe(new PNG())
     .on('parsed', function () {
-
       for (let y = 0; y < this.height; y++) {
         const row = [];
         for (let x = 0; x < this.width; x++) {
@@ -24,7 +23,7 @@ function initializeMaze(callback) {
       }
 
       generateMazeWalls().then(() => {
-        createMazeImage(callback);
+        createMazeImage(callback, false);
       });
     });
 }
@@ -115,8 +114,10 @@ async function generateMazeWalls() {
 
 function createMazeImage(callback, isDebug = false) {
   if (!isDebug) {
+    callback();
     return;
   }
+
   const height = WALLS.length;
   const width = WALLS[0].length;
   const png = new PNG({ width, height });
@@ -253,6 +254,11 @@ const io = new Server({
   },
 });
 
+function handleRestart(socket) {
+  userPositions.set(socket.id, { x: 0, y: 0 });
+  socket.emit("mazeUpdate", getSmallMazeData(0, 0));
+}
+
 function handleMove(data, socket, callback) {
   const { x, y } = data;
   const position = userPositions.get(socket.id);
@@ -301,6 +307,7 @@ function initializeSocketServer() {
 
     socket.emit("mazeUpdate", getSmallMazeData(0, 0));
     socket.on("move", (data, callback) => handleMove(data, socket, callback));
+    socket.on("restart", () => handleRestart(socket));
     socket.on("endGame", () => handleDisconnect(socket));
     socket.on("disconnect", () => handleDisconnect(socket));
   });
