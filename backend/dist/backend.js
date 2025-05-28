@@ -23,13 +23,14 @@ function initializeMaze(callback) {
         FLAG_IMAGE.push(row);
       }
 
-      generateMazeWalls();
-      // createMazeImage(callback);
-      callback();
+      generateMazeWalls().then(() => {
+        // createMazeImage(callback);
+        callback();
+      });
     });
 }
 
-function generateMazeWalls() {
+async function generateMazeWalls() {
   const cellWidth = FLAG_IMAGE[0].length;
   const cellHeight = FLAG_IMAGE.length;
   const width = cellWidth * 2 + 1;
@@ -301,12 +302,12 @@ function initializeSocketServer() {
     socket.on("endGame", () => handleDisconnect(socket));
     socket.on("disconnect", () => handleDisconnect(socket));
   });
-  setInterval(() => {
-    generateMazeWalls();
+  setInterval(async () => {
+    await generateMazeWalls();
     for (const [id, position] of userPositions.entries()) {
       io.to(id).emit("mazeUpdate", {isTimer:true, ...getSmallMazeData(position.x, position.y)});
     }
-  }, 4500);
+  }, 5000);
 }
 
 initializeMaze(initializeSocketServer);

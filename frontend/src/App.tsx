@@ -7,6 +7,7 @@ function App() {
   const [colors, setColors] = useState<string[][]>([]);
   const [coords, setCoords] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [lastUpdate, setLastUpdate] = useState<number>(Date.now());
+  const [lastMoveRight, setLastMoveRight] = useState<boolean>(true);
   const [timer, setTimer] = useState<number>(5);
 
   const coordsRef = useRef(coords);
@@ -15,7 +16,7 @@ function App() {
   }, [coords]);
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       const now = Date.now();
       const elapsed = Math.floor((now - lastUpdate) / 1000);
       if (elapsed >= 5) {
@@ -55,9 +56,11 @@ function App() {
           break;
         case 'ArrowLeft':
           newCoords.x--;
+          setLastMoveRight(false);
           break;
         case 'ArrowRight':
           newCoords.x++;
+          setLastMoveRight(true);
           break;
         default:
           return;
@@ -85,9 +88,11 @@ function App() {
     <>
       <div id="main-container">
         <div className="side-panel">
-          <p> Some instructions here keep it short but nice follow the blue path. Use arrow keys to navigate</p>
-          <p> Maybe it forms a word?</p>
-          <p> Maze size: </p>
+          <h5>Greycat's been feeling kind of <i>blue</i> lately, find the hidden message to cheer him up!</h5>
+          <div className="keys">
+            <img src="./keys.svg" />
+            <h5>Use the arrow keys to move!</h5>
+          </div>
         </div>
         <div
           className="maze-container"
@@ -132,6 +137,7 @@ function App() {
                           objectFit: 'contain',
                           top: '0',
                           left: '0',
+                          transform: `scale(${lastMoveRight ? -1 : 1}, 1)`,
                         }}
                       />
                     )}
@@ -141,9 +147,7 @@ function App() {
             )}</div>
         </div>
         <div className="side-panel">
-          <img src="./timer.svg"></img>
-          <p> Maze updates in</p>
-          <h3>{timer}</h3>
+          <div className="timer"><img src="./timer.svg" /> <h1>{timer}s</h1></div>
         </div>
       </div>
 
