@@ -137,6 +137,7 @@ function App() {
                       borderLeft: wallLeft ? borderStyle : 'none',
                       borderRight: wallRight ? borderStyle : 'none',
                       position: 'relative',
+                      borderRadius: '2px',
                     }}
                   >
                     {(rowIndex === Math.floor(colors.length / 2)) && (colIndex === Math.floor(colors.length / 2)) && (
