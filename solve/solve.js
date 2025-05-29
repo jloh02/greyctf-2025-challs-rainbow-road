@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 import { PNG } from 'pngjs';
 import fs from "fs"
+import { exit } from 'process';
 
 const socket = io('http://localhost:4000')
 
@@ -43,7 +44,7 @@ socket.on('connect', () => {
       png.data[idx * 4 + 1] = g;
       png.data[idx * 4 + 2] = b;
       png.data[idx * 4 + 3] = 255; // Fully opaque
-      console.log(`Setting color at (${row}, ${col}) to ${hex}`);
+      // console.log(`Setting color at (${row}, ${col}) to ${hex}`);
     }
     png.pack().pipe(fs.createWriteStream('maze.png')).on('finish', () => {
       console.log('Maze image saved as maze.png');
