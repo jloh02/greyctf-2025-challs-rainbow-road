@@ -47,6 +47,7 @@ socket.on('connect', () => {
     }
     png.pack().pipe(fs.createWriteStream('maze.png')).on('finish', () => {
       console.log('Maze image saved as maze.png');
+      exit(0);
     });
   })()
 })
