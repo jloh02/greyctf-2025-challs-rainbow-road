@@ -264,8 +264,8 @@ function handleMove(data, socket, callback) {
   const position = userPositions.get(socket.id);
 
   if (
-    x >= 0 && x < FLAG_IMAGE[0].length &&
-    y >= 0 && y < FLAG_IMAGE.length &&
+    x >= 0 && x < FLAG_IMAGE[0].length && Number.isInteger(x) && 
+    y >= 0 && y < FLAG_IMAGE.length && Number.isInteger(y) && 
     isAdjacent(x, y, position?.x, position?.y) &&
     canMoveBetween(x, y, position?.x, position?.y)
   ) {
