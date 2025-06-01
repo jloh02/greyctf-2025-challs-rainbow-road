@@ -3,7 +3,7 @@ import { PNG } from 'pngjs';
 import fs from "fs"
 import { exit } from 'process';
 
-const socket = io('http://localhost:4000')
+const socket = io('http://challs2.nusgreyhats.org:33204/')
 
 let x = 0, y = 0;
 let colorsOutput = new Map();
@@ -12,16 +12,27 @@ socket.on('connect', () => {
   console.log('Connected to the server');
 
   (async () => {
-    for (let i = 10; i < 1100; i += 15) {
-      for (let j = 10; j < 200; j += 15) {
+    for (let i = 10; i < 1030; i += 10) {
+      for (let j = 10; j < 180; j += 10) {
         x = i;
         y = j;
-        socket.emit('endGame')
-        const res = await socket.emitWithAck('move', {
-          x,
-          y,
-        });
-        console.log(`Move command sent to (${x}, ${y})`);
+
+        let retryMax = 5;
+        let res;
+        while (true) {
+          try {
+            socket.emit('endGame')
+            res = await socket.timeout(200).emitWithAck('move', {
+              x,
+              y,
+            });
+            console.log(`Move command sent to (${x}, ${y})`);
+            break;
+          } catch (e) {
+            retryMax--;
+            if (retryMax == 0) break;
+          }
+        }
       }
     }
 
